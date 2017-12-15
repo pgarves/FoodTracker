@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<link href="https://fonts.googleapis.com/css?family=Josefin+Sans" rel="stylesheet">
+  <style >
+    body{
+      background-image: url("https://static1.squarespace.com/static/5395130de4b09ddb699acb37/t/57d5ad1d3e00be430c583ca9/1473621283973/Ingredients+for+cooking+and+empty+cutting+board+on+an+old+wooden+table.+Food+background+with+copyspace.jpg?format=1500w");
+      background-size:     cover;
+      background-repeat:   no-repeat;
+      background-position: center center;
+      color: white;
+      font-size:20px;
+      font-family: 'Josefin Sans', sans-serif;
+    }
+    ul {
+      display: inline-block;
+    }
+    li{
+      padding-bottom: 10px;
+      cursor: pointer;
+    }
+    li:hover{
+      color: red;
+    }
+
+    input {
+      border-width:0px;
+      border:none;
+      width: 40px;
+    }
+    p {
+      font-size: 30px;
+      margin: 0;
+      padding: 0;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body >
+
+<h1>Food Tracker</h1>
+
+<div class="foods" style="padding-bottom: 20px">
+  <h2 class="">
+    Select a Food:
+  </h2>
+
+  <div class="">
+    <ul>
+      <li onclick=update("45333594")> Grilled Chicken </li>
+      <li onclick=update("21294")> Pizza  </li>
+      <li onclick=update("21250")> Hamburger </li>
+      <li onclick=update("15128")> Tuna Salad </li>
+      <li onclick=update("45123940")> Cup Noodles </li>
+      <li onclick=update("25033")> Granola Bar </li>
+    </ul>
+
+  </div>
+</div>
+
+
+<div class="calorie-count">
+  <div class="" style="padding-bottom: 20px">
+    <p>Protein:</p>
+    Of food:
+    <input id="foodP" value="">
+    </input>
+    grams
+    <br>
+    Needed:
+    <input id="neededP" value="56">
+    </input>
+    grams
+  </div>
+  <div class="" style="padding-bottom: 20px">
+    <p>Carbohydrates:</p>
+
+    Of food:
+    <input id="foodC" value="">
+    </input>
+    grams
+    <br>
+    Needed:
+    <input id="neededC" value="220">
+    </input>
+
+    grams
+  </div>
+  <div class="" style="padding-bottom: 20px">
+    <p>Fiber:</p>
+
+    Of food:
+    <input id="foodF" value="">
+    </input>
+    grams
+    <br>
+      Needed:
+    <input id="neededF" value="15">
+    </input>
+    grams
+  </div>
+  <div class="" style="padding-bottom: 20px">
+    <p>Calcium:</p>
+
+    Of food:
+    <input id="foodCal" value="">
+    </input>
+    milligrams
+    <br>
+    Needed:
+    <input id="neededCal" value="1000">
+    </input>
+    milligrams
+  </div>
+  <div class="" style="padding-bottom: 20px">
+    <p>Iron:</p>
+
+    Of food:
+    <input id="foodI" value="">
+    </input>
+    milligrams
+    <br>
+    Needed:
+    <input id="neededI" value="20">
+    </input>
+    milligrams
+  </div>
+</div>
+
+<div class="recommendation" style="padding-bottom: 20px">
+  <div class="">
+    Recomended Food:
+    <input id="recco" style="width: 170px" value="">
+    </input>
+  </div>
+</div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="https://sdk.amazonaws.com/js/aws-sdk-2.7.16.min.js"></script>
+
+
+<script>
+AWS.config.update({
+  region: "us-west-2",
+  endpoint: 'http://localhost:8000',
+  accessKeyId: "fakeMyKeyId",
+  secretAccessKey: "fakeSecretAccessKey"
+});
+
+var dynamodb = new AWS.DynamoDB();
+
+function createUserData() {
+    var params = {
+        TableName : "UserNutrients",
+        KeySchema: [
+            { AttributeName: "Protein", KeyType: "HASH"},
+            { AttributeName: "Carbohydrates", KeyType: "HASH" },
+            { AttributeName: "Fiber", KeyType: "HASH"},
+            { AttributeName: "Calcium", KeyType: "HASH"},
+            { AttributeName: "Iron", KeyType: "HASH"}
+        ],
+        AttributeDefinitions: [
+            { AttributeName: "Protein", AttributeType: "N"},
+            { AttributeName: "Carbohydrates", AttributeType: "N" },
+            { AttributeName: "Fiber", AttributeType: "N" },
+            { AttributeName: "Calcium", AttributeType: "N"},
+            { AttributeName: "Iron", AttributeType: "N"}
+        ],
+        ProvisionedThroughput: {
+            ReadCapacityUnits: 5,
+            WriteCapacityUnits: 5
+        }
+    };
+
+    dynamodb.createTable(params, function(err, data) {
+        if (err) {
+            document.getElementById('textarea').innerHTML = "Unable to create table: " + "\n" + JSON.stringify(err, undefined, 2);
+        } else {
+            document.getElementById('textarea').innerHTML = "Created table: " + "\n" + JSON.stringify(data, undefined, 2);
+        }
+    });
+}
+
+</script>
+
+<script>
+
+
+function update(num){
+
+  var docClient = new AWS.DynamoDB.DocumentClient();
+
+  $( function() {
+      $.get(
+          "http://api.nal.usda.gov/ndb/reports",
+          {
+              "api_key": "RDzPkG1mMYFuClUlIILcay0sXdhUTZxUlhp1Xljs",
+              "ndbno": num
+
+          },
+          function(data) {
+              console.log(data);
+              var pro,carb,fiber,cal,iron;
+
+              var all = data.report.food.nutrients
+
+              for (var i = 0; i < all.length; i++){
+
+                if (all[i].name == "Protein"){
+                   pro = all[i].value
+                   document.getElementById("foodP").value = pro
+                }
+                if (all[i].name == "Carbohydrate, by difference"){
+                   carb = all[i].value
+                  document.getElementById("foodC").value = carb
+
+                }
+                if (all[i].name == "Fiber, total dietary"){
+                   fiber = all[i].value
+                   document.getElementById("foodF").value = fiber
+                }
+                if (all[i].name == "Calcium, Ca"){
+                   cal = all[i].value
+                   document.getElementById("foodCal").value = cal
+                }
+                if (all[i].name == "Iron, Fe"){
+                   iron = all[i].value
+                   document.getElementById("foodI").value = iron
+                }
+              }
+
+
+
+
+            if (document.getElementById("neededP").value - pro < 0){
+                document.getElementById("neededP").value = 0;
+            }
+            else {
+                document.getElementById("neededP").value = document.getElementById("neededP").value - pro;
+            }
+
+            if (document.getElementById("neededC").value - carb < 0){
+              document.getElementById("neededC").value = 0;
+            }
+            else{
+              document.getElementById("neededC").value = document.getElementById("neededC").value - carb;
+            }
+
+
+            if (document.getElementById("neededF").value - fiber < 0){
+              document.getElementById("neededF").value = 0;
+            }
+            else{
+              document.getElementById("neededF").value = document.getElementById("neededF").value - fiber;
+            }
+
+            if (document.getElementById("neededCal").value - cal < 0){
+              document.getElementById("neededCal").value = 0;
+            }
+            else{
+              document.getElementById("neededCal").value = document.getElementById("neededCal").value - cal;
+            }
+
+            if(document.getElementById("neededI").value - iron < 0){
+              document.getElementById("neededI").value = 0;
+            }
+            else{
+              document.getElementById("neededI").value = document.getElementById("neededI").value - iron;
+            }
+
+            var params = {
+                 TableName: "UserNutrients",
+                 Item: {
+                     "Protein": document.getElementById("neededP").value,
+                     "Carbohydrates": document.getElementById("neededC").value,
+                     "Fiber": document.getElementById("neededF").value,
+                     "Calcium": document.getElementById("neededCal").value,
+                     "Iron": document.getElementById("neededI").value
+                 }
+             };
+
+             docClient.put(params);
+
+            if (document.getElementById("neededP").value > 0 ){
+              document.getElementById("recco").value = "Grilled Chicken";
+            }
+            else if (document.getElementById("neededI").value > 0 ){
+              document.getElementById("recco").value = "Tuna Salad";
+            }
+            else if (document.getElementById("neededC") > 100 ){
+              document.getElementById("recco").value = "Cup Noodles";
+            }
+            else if (document.getElementById("neededC") > 0 ){
+              document.getElementById("recco").value = "Granola Bar";
+            }
+            else if (document.getElementById("neededCal").value > 100 ){
+              document.getElementById("recco").value = "Pizza";
+            }
+            else if (document.getElementById("neededCal").value > 0 ){
+              document.getElementById("recco").value = "Hamburger";
+            }
+            else{
+              document.getElementById("recco").value = "Grilled Chicken";
+            }
+
+          }
+      );
+  });
+
+
+
+}
+
+
+
+
+
+
+
+</script>
+
+
+</body>
+</html>
