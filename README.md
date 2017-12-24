@@ -19,7 +19,7 @@ It will then suggest other foods for the remainder of the day that allow for the
 
 ## YouTube Video Demo
 
-[Video Demo Link](https://www.youtube.com/watch?v=RvLywpsd0ag&feature=youtu.be)
+[Video Demo Link](https://youtu.be/qSbygZA7BdM)
 
 ## Architecture
 
